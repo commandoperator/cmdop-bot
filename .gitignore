@@ -1,7 +1,3 @@
-# Dev folders (local only)
-@*/
-Makefile
-CLAUDE.md
 
 # Build
 dist/
