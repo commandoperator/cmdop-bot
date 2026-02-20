@@ -3,14 +3,12 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from cmdop_bot.core.base import BaseChannel
+from cmdop_bot.core.cmdop_handler import CMDOPHandler
 from cmdop_bot.core.permissions import PermissionManager
 from cmdop_bot.channels.slack.blocks import BlockBuilder
-
-if TYPE_CHECKING:
-    from cmdop import AsyncCMDOPClient
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +19,12 @@ class SlackApp(BaseChannel):
     Uses Socket Mode for real-time events without public webhooks.
 
     Example:
+        >>> from cmdop_bot import Model
         >>> app = SlackApp(
         ...     bot_token="xoxb-YOUR-BOT-TOKEN",
         ...     app_token="xapp-YOUR-APP-TOKEN",
         ...     cmdop_api_key="cmd_xxx",
+        ...     model=Model.balanced(),  # Optional: AI model tier
         ... )
         >>> app.run()
     """
@@ -38,6 +38,7 @@ class SlackApp(BaseChannel):
         allowed_users: list[str] | None = None,
         permissions: PermissionManager | None = None,
         machine: str | None = None,
+        model: str | None = None,
         timeout: float = 30.0,
     ) -> None:
         """Initialize Slack app.
@@ -49,35 +50,24 @@ class SlackApp(BaseChannel):
             allowed_users: List of allowed Slack user IDs. None = allow all.
             permissions: Permission manager for fine-grained control
             machine: Target machine hostname. None = use default machine.
+            model: Model tier alias (e.g. Model.balanced()). None = server default.
             timeout: Default command timeout in seconds.
         """
         super().__init__(bot_token, cmdop_api_key)
         self._app_token = app_token
         self._allowed_users = set(allowed_users) if allowed_users else None
         self._permissions = permissions or PermissionManager()
-        self._machine = machine
         self._timeout = timeout
+
+        # CMDOP handler with all logic
+        self._cmdop = CMDOPHandler(api_key=cmdop_api_key, machine=machine, model=model)
 
         self._app: Any = None
         self._handler: Any = None
-        self._cmdop_client: AsyncCMDOPClient | None = None
 
     @property
     def name(self) -> str:
         return "slack"
-
-    async def _get_cmdop_client(self) -> AsyncCMDOPClient:
-        """Get or create CMDOP client (lazy initialization)."""
-        if self._cmdop_client is None:
-            from cmdop import AsyncCMDOPClient
-
-            self._cmdop_client = AsyncCMDOPClient.remote(api_key=self._cmdop_api_key)
-
-            if self._machine:
-                await self._cmdop_client.terminal.set_machine(self._machine)
-                logger.info(f"Connected to machine: {self._machine}")
-
-        return self._cmdop_client
 
     def _is_allowed(self, user_id: str) -> bool:
         """Check if user is allowed to use the app."""
@@ -170,9 +160,7 @@ class SlackApp(BaseChannel):
     async def _handle_shell(self, command: str, respond) -> None:
         """Handle shell command."""
         try:
-            client = await self._get_cmdop_client()
-
-            output, exit_code = await client.terminal.execute(
+            output, exit_code = await self._cmdop.execute_shell(
                 command,
                 timeout=self._timeout,
             )
@@ -197,9 +185,7 @@ class SlackApp(BaseChannel):
     async def _handle_agent(self, task: str, respond) -> None:
         """Handle agent command."""
         try:
-            client = await self._get_cmdop_client()
-
-            result = await client.agent.run(task)
+            result = await self._cmdop.run_agent(task)
 
             blocks = BlockBuilder.agent_result(
                 task=task,
@@ -218,13 +204,14 @@ class SlackApp(BaseChannel):
     async def _handle_machine(self, hostname: str, respond) -> None:
         """Handle machine command."""
         try:
-            client = await self._get_cmdop_client()
-            session = await client.terminal.set_machine(hostname)
+            full_hostname = await self._cmdop.set_machine(hostname)
+            client = await self._cmdop.get_client()
+            session = client.terminal.current_session
 
             blocks = BlockBuilder.machine_info(
-                hostname=session.machine_hostname,
-                os=session.os,
-                shell=session.shell,
+                hostname=full_hostname,
+                os=session.os if session else "unknown",
+                shell=session.shell if session else "unknown",
             )
 
             await respond(blocks=blocks)
@@ -238,16 +225,15 @@ class SlackApp(BaseChannel):
     async def _handle_status(self, respond) -> None:
         """Handle status command."""
         try:
-            client = await self._get_cmdop_client()
-
             fields = [
-                ("Mode", client.mode),
-                ("Connected", ":white_check_mark: Yes" if client.is_connected else ":x: No"),
+                ("Machine", self._cmdop.machine or "(default)"),
+                ("Model", self._cmdop.model or "(default)"),
             ]
 
+            client = await self._cmdop.get_client()
             current_session = client.terminal.current_session
             if current_session:
-                fields.append(("Machine", f"`{current_session.machine_hostname}`"))
+                fields.append(("Session", f"`{current_session.machine_hostname}`"))
 
             blocks = [
                 BlockBuilder.header(":electric_plug: Connection Status"),
@@ -264,8 +250,7 @@ class SlackApp(BaseChannel):
     async def _handle_ls(self, path: str, respond) -> None:
         """Handle ls command."""
         try:
-            client = await self._get_cmdop_client()
-            response = await client.files.list(path)
+            response = await self._cmdop.list_files(path)
             entries = response.entries
 
             blocks = BlockBuilder.file_list(path, entries)
@@ -280,8 +265,7 @@ class SlackApp(BaseChannel):
     async def _handle_cat(self, path: str, respond) -> None:
         """Handle cat command."""
         try:
-            client = await self._get_cmdop_client()
-            content = await client.files.read(path)
+            content = await self._cmdop.read_file(path)
 
             if isinstance(content, bytes):
                 try:
@@ -304,9 +288,7 @@ class SlackApp(BaseChannel):
         self._running = False
         if self._handler:
             await self._handler.close_async()
-        if self._cmdop_client:
-            await self._cmdop_client.close()
-            self._cmdop_client = None
+        await self._cmdop.close()
         logger.info("Slack app stopped")
 
     async def send(self, chat_id: str, text: str) -> None:

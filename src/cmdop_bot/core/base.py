@@ -1,5 +1,7 @@
 """Base channel class."""
 
+import asyncio
+import signal
 from abc import ABC, abstractmethod
 from typing import Callable, Awaitable
 
@@ -30,6 +32,7 @@ class BaseChannel(ABC):
         self._token = token
         self._cmdop_api_key = cmdop_api_key
         self._running = False
+        self._shutdown_event: asyncio.Event | None = None
 
     @property
     @abstractmethod
@@ -68,14 +71,32 @@ class BaseChannel(ABC):
 
     def run(self) -> None:
         """Run the bot (blocking). Convenience method."""
-        import asyncio
-        asyncio.run(self._run_forever())
-
-    async def _run_forever(self) -> None:
-        """Run until stopped."""
-        await self.start()
         try:
-            while self._running:
-                await asyncio.sleep(1)
+            asyncio.run(self._run_with_shutdown())
+        except KeyboardInterrupt:
+            pass  # Clean exit on Ctrl+C
+
+    async def _run_with_shutdown(self) -> None:
+        """Run with graceful shutdown on SIGINT/SIGTERM."""
+        self._shutdown_event = asyncio.Event()
+        loop = asyncio.get_running_loop()
+
+        # Setup signal handlers
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, self._signal_handler)
+
+        try:
+            await self.start()
+            # Wait for shutdown signal
+            await self._shutdown_event.wait()
         finally:
-            await self.stop()
+            # Stop with timeout to avoid hanging
+            try:
+                await asyncio.wait_for(self.stop(), timeout=5.0)
+            except asyncio.TimeoutError:
+                pass  # Force exit if stop() hangs
+
+    def _signal_handler(self) -> None:
+        """Handle shutdown signal."""
+        if self._shutdown_event and not self._shutdown_event.is_set():
+            self._shutdown_event.set()

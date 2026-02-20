@@ -57,3 +57,8 @@ class Command(BaseModel):
         args = parts[1].split() if len(parts) > 1 else []
 
         return cls(name=name, args=args, raw_text=text, message=message)
+
+    @classmethod
+    def parse_text(cls, text: str) -> "Command | None":
+        """Parse command from text (shorthand for parse without message)."""
+        return cls.parse(text)

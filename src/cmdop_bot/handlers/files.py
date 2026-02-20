@@ -54,7 +54,8 @@ class FilesHandler(MessageHandler):
             self._client = AsyncCMDOPClient.remote(api_key=self._api_key)
 
             if self._machine:
-                await self._client.terminal.set_machine(self._machine)
+                # Set machine for files service (not terminal!)
+                await self._client.files.set_machine(self._machine)
 
         return self._client
 

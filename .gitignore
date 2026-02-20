@@ -45,8 +45,8 @@ uv.lock
 poetry.lock
 
 # Environment
-.env
-.env.*
+# .env
+# .env.*
 
 # Logs
 logs/

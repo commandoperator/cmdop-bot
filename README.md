@@ -29,13 +29,15 @@ pip install cmdop-bot[all]
 ### Telegram Bot
 
 ```python
-from cmdop_bots.channels.telegram import TelegramBot
+from cmdop_bot import Model
+from cmdop_bot.channels.telegram import TelegramBot
 
 bot = TelegramBot(
     token="YOUR_TELEGRAM_BOT_TOKEN",
     cmdop_api_key="YOUR_CMDOP_API_KEY",
     allowed_users=[123456789],  # Your Telegram user ID
-    machine="my-server",  # Optional: target machine
+    machine="my-server",        # Optional: target machine
+    model=Model.balanced(),     # Optional: AI model tier
 )
 
 bot.run()
@@ -44,7 +46,7 @@ bot.run()
 ### Discord Bot
 
 ```python
-from cmdop_bots.channels.discord import DiscordBot
+from cmdop_bot.channels.discord import DiscordBot
 
 bot = DiscordBot(
     token="YOUR_DISCORD_BOT_TOKEN",
@@ -58,7 +60,7 @@ bot.run()
 ### Slack App
 
 ```python
-from cmdop_bots.channels.slack import SlackApp
+from cmdop_bot.channels.slack import SlackApp
 
 app = SlackApp(
     bot_token="xoxb-YOUR-BOT-TOKEN",
@@ -113,26 +115,38 @@ app.run()
 - Interactive buttons
 - Slash command handling
 
-## Handlers
+## CMDOPHandler
 
-Use handlers directly in your own bot:
+Use `CMDOPHandler` directly in your own bot:
 
 ```python
-from cmdop_bots.handlers import ShellHandler, AgentHandler, FilesHandler
+from cmdop_bot import CMDOPHandler, Model
 
-# Create handlers
-shell = ShellHandler(cmdop_api_key="cmd_xxx", machine="my-server")
-agent = AgentHandler(cmdop_api_key="cmd_xxx")
-files = FilesHandler(cmdop_api_key="cmd_xxx")
+# Create handler with all CMDOP logic
+async with CMDOPHandler(
+    api_key="cmd_xxx",
+    machine="my-server",
+    model=Model.balanced(),
+) as cmdop:
+    # Run AI agent
+    result = await cmdop.run_agent("List files in /tmp")
+    print(result.text)
 
-# Use in your handler
-async def handle_command(command, send):
-    await shell.handle(command, send)
+    # Execute shell command
+    output, exit_code = await cmdop.execute_shell("ls -la")
+    print(output.decode())
 
-# Clean up
-await shell.close()
-await agent.close()
-await files.close()
+    # List files
+    files = await cmdop.list_files("/var/log")
+    for f in files.entries:
+        print(f.name)
+
+    # Read file
+    content = await cmdop.read_file("/etc/hostname")
+    print(content.decode())
+
+    # Switch machine
+    await cmdop.set_machine("other-server")
 ```
 
 ## Permissions
@@ -140,7 +154,7 @@ await files.close()
 Control who can use your bot:
 
 ```python
-from cmdop_bots import PermissionManager, PermissionLevel
+from cmdop_bot import PermissionManager, PermissionLevel
 
 pm = PermissionManager()
 
@@ -158,17 +172,55 @@ bot = TelegramBot(
 )
 ```
 
+## Model Selection
+
+Choose AI model tier for `/agent` command:
+
+```python
+from cmdop_bot import Model
+
+# Available tiers (cheapest to most capable)
+Model.cheap()      # "@cheap+agents"    - Most economical
+Model.budget()     # "@budget+agents"   - Budget-friendly
+Model.fast()       # "@fast+agents"     - Fastest response
+Model.standard()   # "@standard+agents" - Standard performance
+Model.balanced()   # "@balanced+agents" - Best value (default)
+Model.smart()      # "@smart+agents"    - Highest quality
+Model.premium()    # "@premium+agents"  - Premium tier
+
+# With capabilities
+Model.smart(vision=True)   # "@smart+agents+vision"
+Model.balanced(code=True)  # "@balanced+agents+code"
+
+# Use in bot
+bot = TelegramBot(
+    token="...",
+    cmdop_api_key="...",
+    model=Model.cheap(),  # Use cheapest model
+)
+```
+
+Models are resolved dynamically by SDKRouter - the actual LLM is selected server-side based on current best options for each tier.
+
 ## Architecture
 
 ```
 +--------------+
 |  Telegram    |
-|  Discord     |------> CMDOP SDK ------> Your Servers
+|  Discord     |---> CMDOPHandler ---> CMDOP SDK ---> Your Servers
 |  Slack       |
 +--------------+
 ```
 
-- **Simple**: Each bot is < 200 lines of code
+All bots share the same `CMDOPHandler` class which encapsulates:
+- CMDOP client initialization and connection management
+- Machine targeting (switch between servers)
+- Model selection (AI tier for agent commands)
+- Shell command execution
+- File operations (list, read)
+- AI agent execution
+
+- **Simple**: Each bot uses CMDOPHandler for all CMDOP logic
 - **Reliable**: Proper error handling, reconnection
 - **Secure**: Permission system, user allowlists
 
@@ -202,15 +254,8 @@ ruff check src/cmdop_bot
 | `SLACK_APP_TOKEN` | Slack app token (xapp-...) | For Slack |
 | `CMDOP_API_KEY` | CMDOP API key (cmd_xxx) | Yes |
 | `CMDOP_MACHINE` | Default target machine | No |
+| `CMDOP_MODEL` | Model tier (@cheap, @balanced, @smart) | No |
 | `ALLOWED_USERS` | Comma-separated user IDs | No |
-
-## Examples
-
-See the `examples/` directory:
-- `telegram_bot.py` - Full Telegram bot example
-- `discord_bot.py` - Full Discord bot example
-- `slack_app.py` - Full Slack app example
-- `multi_channel.py` - Multi-channel hub example
 
 ## License
 

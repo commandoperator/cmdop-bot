@@ -6,13 +6,13 @@ import logging
 from typing import TYPE_CHECKING
 
 from cmdop_bot.core.base import BaseChannel
+from cmdop_bot.core.cmdop_handler import CMDOPHandler
 from cmdop_bot.core.permissions import PermissionManager
 from cmdop_bot.channels.discord.embeds import EmbedBuilder
 
 if TYPE_CHECKING:
     import discord
     from discord import app_commands
-    from cmdop import AsyncCMDOPClient
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +23,12 @@ class DiscordBot(BaseChannel):
     Uses slash commands for all operations.
 
     Example:
+        >>> from cmdop_bot import Model
         >>> bot = DiscordBot(
         ...     token="DISCORD_BOT_TOKEN",
         ...     cmdop_api_key="cmd_xxx",
         ...     guild_ids=[123456789],  # Optional: specific guilds
+        ...     model=Model.balanced(),  # Optional: AI model tier
         ... )
         >>> bot.run()
     """
@@ -40,6 +42,7 @@ class DiscordBot(BaseChannel):
         allowed_users: list[int] | None = None,
         permissions: PermissionManager | None = None,
         machine: str | None = None,
+        model: str | None = None,
         timeout: float = 30.0,
     ) -> None:
         """Initialize Discord bot.
@@ -51,35 +54,24 @@ class DiscordBot(BaseChannel):
             allowed_users: List of allowed Discord user IDs. None = allow all.
             permissions: Permission manager for fine-grained control
             machine: Target machine hostname. None = use default machine.
+            model: Model tier alias (e.g. Model.balanced()). None = server default.
             timeout: Default command timeout in seconds.
         """
         super().__init__(token, cmdop_api_key)
         self._guild_ids = guild_ids
         self._allowed_users = set(allowed_users) if allowed_users else None
         self._permissions = permissions or PermissionManager()
-        self._machine = machine
         self._timeout = timeout
+
+        # CMDOP handler with all logic
+        self._cmdop = CMDOPHandler(api_key=cmdop_api_key, machine=machine, model=model)
 
         self._bot: discord.Client | None = None
         self._tree: app_commands.CommandTree | None = None
-        self._cmdop_client: AsyncCMDOPClient | None = None
 
     @property
     def name(self) -> str:
         return "discord"
-
-    async def _get_cmdop_client(self) -> AsyncCMDOPClient:
-        """Get or create CMDOP client (lazy initialization)."""
-        if self._cmdop_client is None:
-            from cmdop import AsyncCMDOPClient
-
-            self._cmdop_client = AsyncCMDOPClient.remote(api_key=self._cmdop_api_key)
-
-            if self._machine:
-                await self._cmdop_client.terminal.set_machine(self._machine)
-                logger.info(f"Connected to machine: {self._machine}")
-
-        return self._cmdop_client
 
     def _is_allowed(self, user_id: int) -> bool:
         """Check if user is allowed to use the bot."""
@@ -193,9 +185,7 @@ class DiscordBot(BaseChannel):
         await interaction.response.defer()
 
         try:
-            client = await self._get_cmdop_client()
-
-            output, exit_code = await client.terminal.execute(
+            output, exit_code = await self._cmdop.execute_shell(
                 command,
                 timeout=self._timeout,
             )
@@ -236,9 +226,7 @@ class DiscordBot(BaseChannel):
         await interaction.response.defer()
 
         try:
-            client = await self._get_cmdop_client()
-
-            result = await client.agent.run(task)
+            result = await self._cmdop.run_agent(task)
 
             embed = EmbedBuilder.agent_result(
                 task=task,
@@ -271,13 +259,14 @@ class DiscordBot(BaseChannel):
         await interaction.response.defer()
 
         try:
-            client = await self._get_cmdop_client()
-            session = await client.terminal.set_machine(hostname)
+            full_hostname = await self._cmdop.set_machine(hostname)
+            client = await self._cmdop.get_client()
+            session = client.terminal.current_session
 
             embed = EmbedBuilder.machine_info(
-                hostname=session.machine_hostname,
-                os=session.os,
-                shell=session.shell,
+                hostname=full_hostname,
+                os=session.os if session else "unknown",
+                shell=session.shell if session else "unknown",
             )
 
             await interaction.followup.send(embed=embed)
@@ -299,7 +288,7 @@ class DiscordBot(BaseChannel):
             return
 
         try:
-            client = await self._get_cmdop_client()
+            client = await self._cmdop.get_client()
 
             embed = discord.Embed(
                 title="🔌 Connection Status",
@@ -307,13 +296,13 @@ class DiscordBot(BaseChannel):
             )
 
             embed.add_field(
-                name="Mode",
-                value=client.mode,
+                name="Machine",
+                value=self._cmdop.machine or "(default)",
                 inline=True,
             )
             embed.add_field(
-                name="Connected",
-                value="✅ Yes" if client.is_connected else "❌ No",
+                name="Model",
+                value=self._cmdop.model or "(default)",
                 inline=True,
             )
 
@@ -349,8 +338,7 @@ class DiscordBot(BaseChannel):
         await interaction.response.defer()
 
         try:
-            client = await self._get_cmdop_client()
-            response = await client.files.list(path)
+            response = await self._cmdop.list_files(path)
             entries = response.entries
 
             embed = EmbedBuilder.file_list(path, entries)
@@ -379,8 +367,7 @@ class DiscordBot(BaseChannel):
         await interaction.response.defer()
 
         try:
-            client = await self._get_cmdop_client()
-            content = await client.files.read(path)
+            content = await self._cmdop.read_file(path)
 
             if isinstance(content, bytes):
                 try:
@@ -407,9 +394,7 @@ class DiscordBot(BaseChannel):
         self._running = False
         if self._bot:
             await self._bot.close()
-        if self._cmdop_client:
-            await self._cmdop_client.close()
-            self._cmdop_client = None
+        await self._cmdop.close()
         logger.info("Discord bot stopped")
 
     async def send(self, chat_id: str, text: str) -> None:
