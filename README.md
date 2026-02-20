@@ -97,6 +97,7 @@ app.run()
 ## Features
 
 ### Telegram
+- **Chat mode**: Just type messages - no `/agent` needed
 - MarkdownV2 formatting
 - Code block syntax highlighting
 - Typing indicators

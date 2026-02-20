@@ -228,9 +228,49 @@ class TelegramBot(BaseChannel):
         )
 
     async def _handle_message(self, msg: AiogramMessage) -> None:
-        """Handle regular messages (non-commands)."""
+        """Handle regular messages (non-commands) - route to agent by default."""
         if not self._is_allowed(msg.from_user.id):
             return
 
-        message = self._parse_message(msg)
-        await self.on_message(message)
+        text = msg.text or ""
+
+        # Skip if empty
+        if not text.strip():
+            return
+
+        # Route to agent handler (chat mode)
+        await self._handle_chat_message(msg, text)
+
+    async def _handle_chat_message(self, msg: AiogramMessage, text: str) -> None:
+        """Handle chat message - send to AI agent."""
+        # Send "thinking" message
+        status_msg = await msg.answer("🤔 Thinking...")
+
+        try:
+            result = await self._cmdop.run_agent(text)
+
+            # Delete status message
+            try:
+                await status_msg.delete()
+            except Exception:
+                pass
+
+            # Format response
+            if result.success:
+                response_text = result.text or "Done."
+                if len(response_text) > 3500:
+                    response_text = response_text[:3500] + "\n... (truncated)"
+                formatted = self._formatter.escape(response_text)
+            else:
+                formatted = self._formatter.error(result.error or "Unknown error")
+
+            await msg.answer(formatted, parse_mode="MarkdownV2")
+
+        except Exception as e:
+            logger.exception("Chat message failed")
+            try:
+                await status_msg.delete()
+            except Exception:
+                pass
+            error_text = self._formatter.error(str(e))
+            await msg.answer(error_text, parse_mode="MarkdownV2")

@@ -95,7 +95,14 @@ class CMDOPHandler:
                 logger.info(f"Connected to session on: {self._machine}")
                 self._initialized = True
             except Exception as e:
-                logger.error(f"Failed to set machine '{self._machine}': {e}")
+                # Clean error message without traceback
+                error_msg = str(e)
+                if "No active session" in error_msg:
+                    logger.error(f"Machine '{self._machine}' not found or offline. Check: cmdop status")
+                elif "workspace" in error_msg.lower():
+                    logger.error(f"Machine '{self._machine}' belongs to different workspace. {error_msg}")
+                else:
+                    logger.error(f"Failed to connect to '{self._machine}': {error_msg}")
                 raise
 
         if not self._initialized:
