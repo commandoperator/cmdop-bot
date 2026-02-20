@@ -4,7 +4,7 @@
 CMDOPHandler contains all CMDOP logic - use it to build custom integrations.
 
 Prerequisites:
-    1. Get CMDOP API key from https://cmdop.com
+    1. Get CMDOP API key from https://my.cmdop.com/dashboard/settings/
     2. pip install cmdop-bot
 
 Usage:
@@ -17,7 +17,7 @@ from cmdop_bot import CMDOPHandler, Model
 
 async def main():
     async with CMDOPHandler(
-        api_key="cmdop_xxx",
+        api_key="cmdop_xxx",  # https://my.cmdop.com/dashboard/settings/
         machine="my-server",
         model=Model.balanced(),
     ) as cmdop:

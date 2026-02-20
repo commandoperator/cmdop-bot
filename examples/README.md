@@ -2,10 +2,16 @@
 
 Simple examples for each platform.
 
-## Quick Start
+## Prerequisites
+
+1. Download agent from [cmdop.com/downloads](https://cmdop.com/downloads/)
+2. Install and authorize the agent on your machine
+3. Get API key from [my.cmdop.com/dashboard/settings](https://my.cmdop.com/dashboard/settings/)
+
+## Install
 
 ```bash
-pip install cmdop-bot[telegram]  # or [discord], [slack], [all]
+pip install "cmdop-bot[telegram]"  # or [discord], [slack], [all]
 ```
 
 ## Telegram

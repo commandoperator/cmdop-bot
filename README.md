@@ -6,22 +6,29 @@ Control your servers via Telegram, Discord, or Slack. Simple, reliable, open-sou
 
 > 📖 **Read the article**: [PicoClaw and OpenClaw Are Not Infrastructure: The $10 AI Agent Myth](https://medium.com/@reformsai/picoclaw-and-openclaw-are-not-infrastructure-the-10-ai-agent-myth-43d43e0726e3)
 
+## Getting Started
+
+1. **Download agent** from [cmdop.com/downloads](https://cmdop.com/downloads/)
+2. **Install and authorize** the agent on your machine
+3. **Get API key** from [my.cmdop.com/dashboard/settings](https://my.cmdop.com/dashboard/settings/)
+4. **Install the bot** (see below)
+
 ## Install
 
 ```bash
 pip install cmdop-bot
 
 # With Telegram support
-pip install cmdop-bot[telegram]
+pip install "cmdop-bot[telegram]"
 
 # With Discord support
-pip install cmdop-bot[discord]
+pip install "cmdop-bot[discord]"
 
 # With Slack support
-pip install cmdop-bot[slack]
+pip install "cmdop-bot[slack]"
 
 # With all channels
-pip install cmdop-bot[all]
+pip install "cmdop-bot[all]"
 ```
 
 ## Quick Start
@@ -34,7 +41,7 @@ from cmdop_bot.channels.telegram import TelegramBot
 
 bot = TelegramBot(
     token="YOUR_TELEGRAM_BOT_TOKEN",
-    cmdop_api_key="YOUR_CMDOP_API_KEY",
+    cmdop_api_key="cmdop_xxx",  # https://my.cmdop.com/dashboard/settings/
     allowed_users=[123456789],  # Your Telegram user ID
     machine="my-server",        # Optional: target machine
     model=Model.balanced(),     # Optional: AI model tier
@@ -50,7 +57,7 @@ from cmdop_bot.channels.discord import DiscordBot
 
 bot = DiscordBot(
     token="YOUR_DISCORD_BOT_TOKEN",
-    cmdop_api_key="YOUR_CMDOP_API_KEY",
+    cmdop_api_key="cmdop_xxx",  # https://my.cmdop.com/dashboard/settings/
     guild_ids=[123456789],  # Optional: for faster command sync
 )
 
@@ -65,7 +72,7 @@ from cmdop_bot.channels.slack import SlackApp
 app = SlackApp(
     bot_token="xoxb-YOUR-BOT-TOKEN",
     app_token="xapp-YOUR-APP-TOKEN",
-    cmdop_api_key="YOUR_CMDOP_API_KEY",
+    cmdop_api_key="cmdop_xxx",  # https://my.cmdop.com/dashboard/settings/
 )
 
 app.run()
@@ -253,7 +260,7 @@ ruff check src/cmdop_bot
 | `DISCORD_BOT_TOKEN` | Discord bot token | For Discord |
 | `SLACK_BOT_TOKEN` | Slack bot token (xoxb-...) | For Slack |
 | `SLACK_APP_TOKEN` | Slack app token (xapp-...) | For Slack |
-| `CMDOP_API_KEY` | CMDOP API key (cmdop_xxx) | Yes |
+| `CMDOP_API_KEY` | CMDOP API key from [my.cmdop.com](https://my.cmdop.com/dashboard/settings/) | Yes |
 | `CMDOP_MACHINE` | Default target machine | No |
 | `CMDOP_MODEL` | Model tier (@cheap, @balanced, @smart) | No |
 | `ALLOWED_USERS` | Comma-separated user IDs | No |
