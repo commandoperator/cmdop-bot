@@ -124,7 +124,7 @@ from cmdop_bot import CMDOPHandler, Model
 
 # Create handler with all CMDOP logic
 async with CMDOPHandler(
-    api_key="cmd_xxx",
+    api_key="cmdop_xxx",
     machine="my-server",
     model=Model.balanced(),
 ) as cmdop:
@@ -252,7 +252,7 @@ ruff check src/cmdop_bot
 | `DISCORD_BOT_TOKEN` | Discord bot token | For Discord |
 | `SLACK_BOT_TOKEN` | Slack bot token (xoxb-...) | For Slack |
 | `SLACK_APP_TOKEN` | Slack app token (xapp-...) | For Slack |
-| `CMDOP_API_KEY` | CMDOP API key (cmd_xxx) | Yes |
+| `CMDOP_API_KEY` | CMDOP API key (cmdop_xxx) | Yes |
 | `CMDOP_MACHINE` | Default target machine | No |
 | `CMDOP_MODEL` | Model tier (@cheap, @balanced, @smart) | No |
 | `ALLOWED_USERS` | Comma-separated user IDs | No |
