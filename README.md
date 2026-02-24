@@ -1,9 +1,13 @@
 # CMDOP Bots
 
+![CMDOP Architecture](https://cmdop.com/images/architecture/vs-personal-agent.png)
+
 **Multi-channel bot integrations for remote machine access.**
 
 Control your servers via Telegram, Discord, or Slack. Simple, reliable, open-source.
 
+> 📖 **Documentation**: [cmdop.com/docs/sdk/bots](https://cmdop.com/docs/sdk/bots/)
+>
 > 📖 **Read the article**: [PicoClaw and OpenClaw Are Not Infrastructure: The $10 AI Agent Myth](https://medium.com/@reformsai/picoclaw-and-openclaw-are-not-infrastructure-the-10-ai-agent-myth-43d43e0726e3)
 
 ## Getting Started
