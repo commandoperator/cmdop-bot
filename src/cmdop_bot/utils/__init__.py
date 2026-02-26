@@ -1,6 +1,7 @@
 """Utility functions for CMDOP SDK."""
 
 from cmdop_bot.utils.escape import escape_markdown
+from cmdop_bot.utils.errors import friendly_error
 from cmdop_bot.utils.rate_limit import (
     RateLimiter,
     RateLimitConfig,
@@ -10,6 +11,7 @@ from cmdop_bot.utils.rate_limit import (
 
 __all__ = [
     "escape_markdown",
+    "friendly_error",
     "RateLimiter",
     "RateLimitConfig",
     "TokenBucket",

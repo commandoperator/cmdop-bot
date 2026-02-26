@@ -39,4 +39,4 @@ class MachineHandler(BaseHandler):
 
         except Exception as e:
             logger.exception("Set machine failed")
-            await self.send_error(msg, str(e))
+            await self.send_error(msg, e)

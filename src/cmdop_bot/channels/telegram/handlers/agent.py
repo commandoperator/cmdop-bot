@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from cmdop_bot.channels.telegram.handlers.base import BaseHandler
 from cmdop_bot.models import Command
+from cmdop_bot.utils.errors import friendly_error
 
 if TYPE_CHECKING:
     from aiogram.types import Message as AiogramMessage
@@ -29,41 +30,25 @@ class AgentHandler(BaseHandler):
             await msg.answer("Usage: `/agent <task description>`", parse_mode="MarkdownV2")
             return
 
-        # Send "thinking" message
-        status_msg = await msg.answer("🤔 Thinking...")
+        await self.send_typing(msg.chat.id)
 
         try:
-            # Use regular run() - wait for full result
             result = await self.cmdop.run_agent(command.args_text)
 
-            # Debug log
             logger.info(f"Agent result: success={result.success}, text_len={len(result.text or '')}, error={result.error}")
             logger.debug(f"Agent result text: {result.text[:500] if result.text else '(empty)'}")
 
-            # Delete status message
-            try:
-                await status_msg.delete()
-            except Exception:
-                pass
-
-            # Format final response
             if result.success:
                 response_text = result.text or "Task completed successfully."
-                # Truncate if too long
                 if len(response_text) > 3500:
                     response_text = response_text[:3500] + "\n... (truncated)"
                 formatted = self.formatter.escape(response_text)
             else:
-                error_text = result.error or "Unknown error"
+                error_text = friendly_error(result.error or "Unknown error")
                 formatted = self.formatter.error(error_text)
 
             await msg.answer(formatted, parse_mode="MarkdownV2")
 
         except Exception as e:
             logger.exception("Agent task failed")
-            # Try to delete status message
-            try:
-                await status_msg.delete()
-            except Exception:
-                pass
-            await self.send_error(msg, str(e))
+            await self.send_error(msg, e)

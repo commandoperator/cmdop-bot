@@ -5,6 +5,8 @@ Handles MarkdownV2 escaping which is notoriously strict.
 
 import re
 
+_URL_RE = re.compile(r"(https?://\S+)")
+
 
 class TelegramFormatter:
     """Format messages for Telegram MarkdownV2.
@@ -16,8 +18,15 @@ class TelegramFormatter:
     ESCAPE_CHARS = r"_*[]()~`>#+-=|{}.!"
 
     def escape(self, text: str) -> str:
-        """Escape special characters for MarkdownV2."""
-        return re.sub(f"([{re.escape(self.ESCAPE_CHARS)}])", r"\\\1", text)
+        """Escape special characters for MarkdownV2, preserving URLs."""
+        parts = _URL_RE.split(text)
+        result: list[str] = []
+        for part in parts:
+            if _URL_RE.fullmatch(part):
+                result.append(part)
+            else:
+                result.append(re.sub(f"([{re.escape(self.ESCAPE_CHARS)}])", r"\\\1", part))
+        return "".join(result)
 
     def code_block(self, code: str, language: str = "") -> str:
         """Format code block.

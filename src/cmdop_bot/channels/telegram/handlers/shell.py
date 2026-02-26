@@ -56,4 +56,4 @@ class ShellHandler(BaseHandler):
 
         except Exception as e:
             logger.exception("Shell command failed")
-            await self.send_error(msg, str(e))
+            await self.send_error(msg, e)

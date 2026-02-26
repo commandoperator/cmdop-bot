@@ -11,6 +11,7 @@ from cmdop_bot.core.cmdop_handler import CMDOPHandler
 from cmdop_bot.core.permissions import PermissionManager
 from cmdop_bot.models import User, Message
 from cmdop_bot.channels.telegram.formatter import TelegramFormatter
+from cmdop_bot.utils.errors import friendly_error
 from cmdop_bot.channels.telegram.handlers import (
     StartHandler,
     HelpHandler,
@@ -243,34 +244,22 @@ class TelegramBot(BaseChannel):
 
     async def _handle_chat_message(self, msg: AiogramMessage, text: str) -> None:
         """Handle chat message - send to AI agent."""
-        # Send "thinking" message
-        status_msg = await msg.answer("🤔 Thinking...")
+        await self._bot.send_chat_action(chat_id=msg.chat.id, action="typing")
 
         try:
             result = await self._cmdop.run_agent(text)
 
-            # Delete status message
-            try:
-                await status_msg.delete()
-            except Exception:
-                pass
-
-            # Format response
             if result.success:
                 response_text = result.text or "Done."
                 if len(response_text) > 3500:
                     response_text = response_text[:3500] + "\n... (truncated)"
                 formatted = self._formatter.escape(response_text)
             else:
-                formatted = self._formatter.error(result.error or "Unknown error")
+                formatted = self._formatter.error(friendly_error(result.error or "Unknown error"))
 
             await msg.answer(formatted, parse_mode="MarkdownV2")
 
         except Exception as e:
             logger.exception("Chat message failed")
-            try:
-                await status_msg.delete()
-            except Exception:
-                pass
-            error_text = self._formatter.error(str(e))
+            error_text = self._formatter.error(friendly_error(e))
             await msg.answer(error_text, parse_mode="MarkdownV2")

@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from cmdop_bot.utils.errors import friendly_error
+
 if TYPE_CHECKING:
     from aiogram import Bot
     from aiogram.types import Message as AiogramMessage
@@ -50,7 +52,7 @@ class BaseHandler:
         """Show typing indicator."""
         await self.bot.send_chat_action(chat_id=chat_id, action="typing")
 
-    async def send_error(self, msg: AiogramMessage, error: str) -> None:
-        """Send error message."""
-        error_msg = self.formatter.error(error)
+    async def send_error(self, msg: AiogramMessage, error: str | Exception) -> None:
+        """Send user-friendly error message."""
+        error_msg = self.formatter.error(friendly_error(error))
         await msg.answer(error_msg, parse_mode="MarkdownV2")

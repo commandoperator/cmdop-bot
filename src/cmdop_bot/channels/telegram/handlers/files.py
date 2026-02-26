@@ -54,7 +54,7 @@ class FilesHandler(BaseHandler):
 
         except Exception as e:
             logger.exception("File operation failed")
-            await self.send_error(msg, str(e))
+            await self.send_error(msg, e)
 
     async def handle_ls(self, msg: AiogramMessage) -> None:
         """Handle /ls command - list directory."""
@@ -71,7 +71,7 @@ class FilesHandler(BaseHandler):
             await self._list_files(msg, path)
         except Exception as e:
             logger.exception("List directory failed")
-            await self.send_error(msg, str(e))
+            await self.send_error(msg, e)
 
     async def handle_cat(self, msg: AiogramMessage) -> None:
         """Handle /cat command - read file."""
@@ -92,7 +92,7 @@ class FilesHandler(BaseHandler):
             await self._read_file(msg, path)
         except Exception as e:
             logger.exception("Read file failed")
-            await self.send_error(msg, str(e))
+            await self.send_error(msg, e)
 
     async def _list_files(self, msg: AiogramMessage, path: str) -> None:
         """List directory contents."""
