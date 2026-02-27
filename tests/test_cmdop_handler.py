@@ -86,7 +86,7 @@ class TestCMDOPHandler:
 
             client = await handler.get_client()
 
-            mock_client_class.remote.assert_called_once_with(api_key=cmdop_api_key)
+            mock_client_class.remote.assert_called_once_with(api_key=cmdop_api_key, server=None, insecure=False)
             assert client == mock_client
 
     @pytest.mark.asyncio
