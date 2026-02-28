@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cmdop-bot"
-version = "2026.02.28"
+version = "2026.2.28.1"
 description = "CMDOP Bot - Multi-channel bot integrations for remote machine access"
 readme = "README.md"
 license = "MIT"

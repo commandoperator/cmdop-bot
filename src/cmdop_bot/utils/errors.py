@@ -5,7 +5,7 @@ def friendly_error(e: str | Exception) -> str:
     """Convert exception or error string to a user-friendly message."""
     msg = str(e)
 
-    if "session_id" in msg or "No active session" in msg:
+    if "session_id" in msg or "No active session" in msg or ("not found" in msg.lower() and "session" in msg.lower()):
         return "Machine is offline or CMDOP agent is not running.\nhttps://cmdop.com/downloads/"
 
     if "context canceled" in msg or "CANCELLED" in msg:
