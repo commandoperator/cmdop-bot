@@ -29,6 +29,8 @@ class StartHandler(BaseHandler):
             "• `/files ls|cat <path>` \\- File operations\n"
             "• `/ls [path]` \\- List directory\n"
             "• `/cat <path>` \\- Read file\n"
+            "• `/skills list|show|run` \\- Skills management\n"
+            "• `/skill <name> <prompt>` \\- Run a skill \\(shorthand\\)\n"
             "• `/help` \\- Show this help\n"
         )
         await msg.answer(welcome, parse_mode="MarkdownV2")
@@ -51,6 +53,11 @@ class HelpHandler(BaseHandler):
             "`/cat <path>` \\- Read file \\(shortcut\\)\n\n"
             "*AI Agent:*\n"
             "`/agent <task>` \\- Run AI agent task\n\n"
+            "*Skills:*\n"
+            "`/skills list` \\- List available skills\n"
+            "`/skills show <name>` \\- Show skill details\n"
+            "`/skills run <name> <prompt>` \\- Run a skill\n"
+            "`/skill <name> <prompt>` \\- Run skill \\(shorthand\\)\n\n"
             "*Settings:*\n"
             "`/machine <hostname>` \\- Set target machine\n"
             "`/help` \\- Show this help\n"

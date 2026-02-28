@@ -91,17 +91,23 @@ app.run()
 | Telegram | `/agent <task>` | Run AI agent task |
 | Telegram | `/ls [path]` | List directory |
 | Telegram | `/cat <path>` | Read file |
+| Telegram | `/skills list\|show\|run` | Skills management |
+| Telegram | `/skill <name> <prompt>` | Run a skill (shorthand) |
 | Telegram | `/machine <host>` | Set target machine |
 | Discord | `/shell <cmd>` | Execute shell command |
 | Discord | `/agent <task>` | Run AI agent task |
 | Discord | `/ls [path]` | List directory |
 | Discord | `/cat <path>` | Read file |
+| Discord | `/skills <action> [name] [prompt]` | List, show, or run skills |
+| Discord | `/skill <name> <prompt>` | Run a skill (shorthand) |
 | Discord | `/machine <host>` | Set target machine |
 | Discord | `/status` | Show connection status |
 | Slack | `/cmdop shell <cmd>` | Execute shell command |
 | Slack | `/cmdop agent <task>` | Run AI agent task |
 | Slack | `/cmdop ls [path]` | List directory |
 | Slack | `/cmdop cat <path>` | Read file |
+| Slack | `/cmdop skills list\|show\|run` | Skills management |
+| Slack | `/cmdop skill <name> <prompt>` | Run a skill (shorthand) |
 | Slack | `/cmdop machine <host>` | Set target machine |
 | Slack | `/cmdop status` | Show connection status |
 
@@ -156,6 +162,15 @@ async with CMDOPHandler(
     # Read file
     content = await cmdop.read_file("/etc/hostname")
     print(content.decode())
+
+    # List available skills
+    skills = await cmdop.list_skills()
+    for s in skills:
+        print(f"{s.name}: {s.description}")
+
+    # Run a skill
+    result = await cmdop.run_skill("code-review", "Review this PR")
+    print(result.text)
 
     # Switch machine
     await cmdop.set_machine("other-server")
@@ -231,6 +246,7 @@ All bots share the same `CMDOPHandler` class which encapsulates:
 - Shell command execution
 - File operations (list, read)
 - AI agent execution
+- Skills (list, inspect, run)
 
 - **Simple**: Each bot uses CMDOPHandler for all CMDOP logic
 - **Reliable**: Proper error handling, reconnection

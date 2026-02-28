@@ -34,6 +34,18 @@ async def main():
         for f in files.entries:
             print(f.name)
 
+        # Skills — list, inspect, run
+        skills = await cmdop.list_skills()
+        for s in skills:
+            print(f"{s.name}: {s.description}")
+
+        detail = await cmdop.show_skill("code-review")
+        if detail.found:
+            print(detail.info.name, detail.info.description)
+
+        result = await cmdop.run_skill("code-review", "Review this PR")
+        print(result.text)
+
         # Switch machine
         await cmdop.set_machine("other-server")
 

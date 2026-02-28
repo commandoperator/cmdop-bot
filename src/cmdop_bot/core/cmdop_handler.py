@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from cmdop import AsyncCMDOPClient
     from cmdop.models.agent import AgentResult, AgentStreamEvent
     from cmdop.models.files import FileListResponse
+    from cmdop.models.skills import SkillDetail, SkillInfo, SkillRunResult
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,7 @@ class CMDOPHandler:
                 await self._client.terminal.set_machine(self._machine)
                 await self._client.files.set_machine(self._machine)
                 await self._client.agent.set_machine(self._machine)
+                await self._client.skills.set_machine(self._machine)
                 logger.info(f"Connected to session on: {self._machine}")
                 self._initialized = True
             except Exception as e:
@@ -129,6 +131,7 @@ class CMDOPHandler:
         session = await client.terminal.set_machine(hostname)
         await client.files.set_machine(hostname)
         await client.agent.set_machine(hostname)
+        await client.skills.set_machine(hostname)
 
         self._machine = session.machine_hostname
         logger.info(f"Switched to machine: {self._machine}")
@@ -256,6 +259,50 @@ class CMDOPHandler:
         """
         client = await self.get_client()
         return await client.files.info(path)
+
+    async def list_skills(self) -> list[SkillInfo]:
+        """List available skills on the machine.
+
+        Returns:
+            List of SkillInfo objects.
+        """
+        client = await self.get_client()
+        return await client.skills.list()
+
+    async def show_skill(self, skill_name: str) -> SkillDetail:
+        """Get detailed information about a skill.
+
+        Args:
+            skill_name: Name of the skill to inspect.
+
+        Returns:
+            SkillDetail with metadata and system prompt content.
+        """
+        client = await self.get_client()
+        return await client.skills.show(skill_name)
+
+    async def run_skill(
+        self,
+        skill_name: str,
+        prompt: str,
+        *,
+        timeout: int = 300,
+    ) -> SkillRunResult:
+        """Run a skill with a prompt.
+
+        Args:
+            skill_name: Name of the skill to execute.
+            prompt: User prompt/input for the skill.
+            timeout: Execution timeout in seconds.
+
+        Returns:
+            SkillRunResult with text response.
+        """
+        from cmdop.models.skills import SkillRunOptions
+
+        client = await self.get_client()
+        options = SkillRunOptions(timeout_seconds=timeout)
+        return await client.skills.run(skill_name, prompt, options=options)
 
     async def close(self) -> None:
         """Close CMDOP client and cleanup resources."""

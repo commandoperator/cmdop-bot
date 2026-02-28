@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cmdop-bot"
-version = "2026.02.27"
+version = "2026.02.28"
 description = "CMDOP Bot - Multi-channel bot integrations for remote machine access"
 readme = "README.md"
 license = "MIT"
@@ -93,6 +93,7 @@ warn_unused_ignores = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
 
 [tool.uv.sources]
 cmdop = { path = "/Users/markinmatrix/Documents/htdocs/@CARAPIS/encar_parser_new/@projects/cmdop/projects/software/cmdop_sdk/python/cmdop_bot/../cmdop", editable = true }

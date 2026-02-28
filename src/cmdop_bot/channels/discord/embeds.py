@@ -188,6 +188,8 @@ class EmbedBuilder:
             ("`/agent <task>`", "Run AI agent task"),
             ("`/ls [path]`", "List directory contents"),
             ("`/cat <path>`", "Read file contents"),
+            ("`/skills <action> [name] [prompt]`", "List, show, or run skills"),
+            ("`/skill <name> <prompt>`", "Run a skill (shorthand)"),
             ("`/machine <hostname>`", "Set target machine"),
             ("`/status`", "Show connection status"),
         ]
@@ -259,6 +261,100 @@ class EmbedBuilder:
 
         if truncated:
             embed.set_footer(text="Content truncated due to length limits")
+
+        return embed
+
+    @classmethod
+    def skills_list(cls, skills: list) -> discord.Embed:
+        """Create skills list embed."""
+        import discord
+
+        embed = discord.Embed(
+            title="Skills",
+            color=cls.COLOR_CMDOP,
+        )
+
+        if not skills:
+            embed.description = "No skills found on this machine."
+            return embed
+
+        lines = []
+        for s in skills[:20]:
+            origin = f" [{s.origin}]" if s.origin else ""
+            desc = f" — {s.description}" if s.description else ""
+            lines.append(f"`{s.name}`{origin}{desc}")
+
+        embed.description = "\n".join(lines)
+
+        if len(skills) > 20:
+            embed.set_footer(text=f"Showing 20 of {len(skills)} skills")
+
+        return embed
+
+    @classmethod
+    def skill_detail(cls, detail) -> discord.Embed:
+        """Create skill detail embed."""
+        import discord
+
+        if not detail.found:
+            return cls.error("Skill Not Found", detail.error or "Unknown skill")
+
+        info = detail.info
+        embed = discord.Embed(
+            title=f"Skill: {info.name}",
+            color=cls.COLOR_CMDOP,
+        )
+
+        if info.description:
+            embed.description = info.description
+        if info.author:
+            embed.add_field(name="Author", value=info.author, inline=True)
+        if info.version:
+            embed.add_field(name="Version", value=info.version, inline=True)
+        if info.origin:
+            embed.add_field(name="Origin", value=info.origin, inline=True)
+        if detail.source:
+            embed.add_field(name="Source", value=f"`{detail.source}`", inline=False)
+        if detail.content:
+            preview = detail.content[:500]
+            if len(detail.content) > 500:
+                preview += "\n... (truncated)"
+            embed.add_field(
+                name="System Prompt",
+                value=f"```\n{preview}\n```",
+                inline=False,
+            )
+
+        return embed
+
+    @classmethod
+    def skill_result(cls, skill_name: str, prompt: str, result) -> discord.Embed:
+        """Create skill run result embed."""
+        import discord
+
+        color = cls.COLOR_SUCCESS if result.success else cls.COLOR_ERROR
+        title = "Skill Result" if result.success else "Skill Error"
+
+        embed = discord.Embed(title=title, color=color)
+        embed.add_field(
+            name="Skill",
+            value=f"`{skill_name}`",
+            inline=True,
+        )
+        embed.add_field(
+            name="Prompt",
+            value=prompt[:200] if len(prompt) > 200 else prompt,
+            inline=False,
+        )
+
+        text = result.text or result.error or "No output"
+        if len(text) > 1800:
+            text = text[:1800] + "\n... (truncated)"
+
+        embed.add_field(name="Result", value=text, inline=False)
+
+        if result.duration_ms:
+            embed.set_footer(text=f"Duration: {result.duration_seconds:.1f}s")
 
         return embed
 

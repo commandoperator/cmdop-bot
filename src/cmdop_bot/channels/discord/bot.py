@@ -166,6 +166,32 @@ class DiscordBot(BaseChannel):
         async def cmd_cat(interaction: discord.Interaction, path: str):
             await self._handle_cat(interaction, path)
 
+        @self._tree.command(name="skills", description="List and manage skills")
+        @app_commands.describe(
+            action="Action: list, show, or run",
+            name="Skill name (for show/run)",
+            prompt="Prompt for skill execution (for run)",
+        )
+        async def cmd_skills(
+            interaction: discord.Interaction,
+            action: str,
+            name: str = "",
+            prompt: str = "",
+        ):
+            await self._handle_skills(interaction, action, name, prompt)
+
+        @self._tree.command(name="skill", description="Run a skill (shorthand)")
+        @app_commands.describe(
+            name="Skill name",
+            prompt="Prompt for skill execution",
+        )
+        async def cmd_skill(
+            interaction: discord.Interaction,
+            name: str,
+            prompt: str,
+        ):
+            await self._handle_skills(interaction, "run", name, prompt)
+
     async def _handle_shell(
         self,
         interaction: discord.Interaction,
@@ -388,6 +414,73 @@ class DiscordBot(BaseChannel):
             logger.exception("Read file failed")
             embed = EmbedBuilder.error("Read Failed", str(e))
             await interaction.followup.send(embed=embed)
+
+    async def _handle_skills(
+        self,
+        interaction: discord.Interaction,
+        action: str,
+        name: str,
+        prompt: str,
+    ) -> None:
+        """Handle /skills command."""
+        import discord
+
+        if not self._is_allowed(interaction.user.id):
+            await interaction.response.send_message(
+                "You are not authorized to use this bot.",
+                ephemeral=True,
+            )
+            return
+
+        action = action.lower()
+
+        if action == "list":
+            await interaction.response.defer()
+            try:
+                skills = await self._cmdop.list_skills()
+                embed = EmbedBuilder.skills_list(skills)
+                await interaction.followup.send(embed=embed)
+            except Exception as e:
+                logger.exception("Skills list failed")
+                embed = EmbedBuilder.error("Skills Failed", str(e))
+                await interaction.followup.send(embed=embed)
+
+        elif action == "show":
+            if not name:
+                await interaction.response.send_message(
+                    "Please provide a skill name.", ephemeral=True
+                )
+                return
+            await interaction.response.defer()
+            try:
+                detail = await self._cmdop.show_skill(name)
+                embed = EmbedBuilder.skill_detail(detail)
+                await interaction.followup.send(embed=embed)
+            except Exception as e:
+                logger.exception("Skills show failed")
+                embed = EmbedBuilder.error("Skills Failed", str(e))
+                await interaction.followup.send(embed=embed)
+
+        elif action == "run":
+            if not name or not prompt:
+                await interaction.response.send_message(
+                    "Please provide a skill name and prompt.", ephemeral=True
+                )
+                return
+            await interaction.response.defer()
+            try:
+                result = await self._cmdop.run_skill(name, prompt)
+                embed = EmbedBuilder.skill_result(name, prompt, result)
+                await interaction.followup.send(embed=embed)
+            except Exception as e:
+                logger.exception("Skill run failed")
+                embed = EmbedBuilder.error("Skill Failed", str(e))
+                await interaction.followup.send(embed=embed)
+
+        else:
+            await interaction.response.send_message(
+                "Unknown action. Use: list, show, or run", ephemeral=True
+            )
 
     async def stop(self) -> None:
         """Stop the bot."""

@@ -19,6 +19,7 @@ from cmdop_bot.channels.telegram.handlers import (
     AgentHandler,
     FilesHandler,
     MachineHandler,
+    SkillsHandler,
 )
 
 if TYPE_CHECKING:
@@ -111,6 +112,7 @@ class TelegramBot(BaseChannel):
         self._agent_handler = AgentHandler(**handler_kwargs)
         self._files_handler = FilesHandler(**handler_kwargs)
         self._machine_handler = MachineHandler(**handler_kwargs)
+        self._skills_handler = SkillsHandler(**handler_kwargs)
 
         self._handlers_initialized = True
 
@@ -145,6 +147,8 @@ class TelegramBot(BaseChannel):
         self._dp.message.register(self._files_handler.handle_files, CommandFilter("files"))
         self._dp.message.register(self._files_handler.handle_ls, CommandFilter("ls"))
         self._dp.message.register(self._files_handler.handle_cat, CommandFilter("cat"))
+        self._dp.message.register(self._skills_handler.handle, CommandFilter("skills"))
+        self._dp.message.register(self._skills_handler.handle, CommandFilter("skill"))
         self._dp.message.register(self._handle_message)
 
         logger.info("Starting Telegram bot...")

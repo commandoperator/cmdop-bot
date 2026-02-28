@@ -152,6 +152,19 @@ class SlackApp(BaseChannel):
                 return
             await self._handle_cat(args.strip(), respond)
 
+        elif subcommand == "skills":
+            sub_parts = args.split(maxsplit=1)
+            action = sub_parts[0].lower() if sub_parts else "list"
+            sub_args = sub_parts[1] if len(sub_parts) > 1 else ""
+            await self._handle_skills(action, sub_args, respond)
+
+        elif subcommand == "skill":
+            # Shorthand: /cmdop skill <name> <prompt>
+            if not args or len(args.split(maxsplit=1)) < 2:
+                await respond(text="Usage: `/cmdop skill <name> <prompt>`")
+                return
+            await self._handle_skills("run", args, respond)
+
         else:
             await respond(
                 text=f"Unknown command: `{subcommand}`. Use `/cmdop help` for available commands."
@@ -281,6 +294,44 @@ class SlackApp(BaseChannel):
             logger.exception("Read file failed")
             await respond(
                 blocks=BlockBuilder.error_message("Read Failed", str(e))
+            )
+
+    async def _handle_skills(self, action: str, args: str, respond) -> None:
+        """Handle skills command."""
+        try:
+            if action == "list":
+                skills = await self._cmdop.list_skills()
+                blocks = BlockBuilder.skills_list(skills)
+                await respond(blocks=blocks)
+
+            elif action == "show":
+                name = args.strip()
+                if not name:
+                    await respond(text="Usage: `/cmdop skills show <name>`")
+                    return
+                detail = await self._cmdop.show_skill(name)
+                blocks = BlockBuilder.skill_detail(detail)
+                await respond(blocks=blocks)
+
+            elif action == "run":
+                parts = args.split(maxsplit=1)
+                if len(parts) < 2:
+                    await respond(text="Usage: `/cmdop skills run <name> <prompt>`")
+                    return
+                name, prompt = parts[0], parts[1]
+                result = await self._cmdop.run_skill(name, prompt)
+                blocks = BlockBuilder.skill_result(name, prompt, result)
+                await respond(blocks=blocks)
+
+            else:
+                await respond(
+                    text=f"Unknown skills action: `{action}`. Use: list, show, run"
+                )
+
+        except Exception as e:
+            logger.exception("Skills command failed")
+            await respond(
+                blocks=BlockBuilder.error_message("Skills Failed", str(e))
             )
 
     async def stop(self) -> None:

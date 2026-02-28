@@ -192,6 +192,10 @@ class BlockBuilder:
             "`/cmdop agent <task>` - Run AI agent task",
             "`/cmdop ls [path]` - List directory contents",
             "`/cmdop cat <path>` - Read file contents",
+            "`/cmdop skills list` - List available skills",
+            "`/cmdop skills show <name>` - Show skill details",
+            "`/cmdop skills run <name> <prompt>` - Run a skill",
+            "`/cmdop skill <name> <prompt>` - Run skill (shorthand)",
             "`/cmdop machine <hostname>` - Set target machine",
             "`/cmdop status` - Show connection status",
             "`/cmdop help` - Show this help",
@@ -256,6 +260,94 @@ class BlockBuilder:
 
         if truncated:
             blocks.append(cls.context(["Content truncated due to length limits"]))
+
+        return blocks
+
+    @classmethod
+    def skills_list(cls, skills: list) -> list[dict[str, Any]]:
+        """Build skills list message blocks."""
+        blocks: list[dict[str, Any]] = []
+
+        blocks.append(cls.header(":sparkles: Available Skills"))
+
+        if not skills:
+            blocks.append(cls.text_section("_No skills found on this machine._"))
+            return blocks
+
+        lines = []
+        for s in skills[:25]:
+            origin = f" [{s.origin}]" if s.origin else ""
+            desc = f" — {s.description}" if s.description else ""
+            lines.append(f"`{s.name}`{origin}{desc}")
+
+        blocks.append(cls.text_section("\n".join(lines)))
+
+        if len(skills) > 25:
+            blocks.append(cls.context([f"Showing 25 of {len(skills)} skills"]))
+
+        return blocks
+
+    @classmethod
+    def skill_detail(cls, detail) -> list[dict[str, Any]]:
+        """Build skill detail message blocks."""
+        blocks: list[dict[str, Any]] = []
+
+        if not detail.found:
+            return cls.error_message("Skill Not Found", detail.error or "Unknown skill")
+
+        info = detail.info
+        blocks.append(cls.header(f":sparkles: {info.name}"))
+
+        fields = []
+        if info.description:
+            fields.append(("Description", info.description))
+        if info.author:
+            fields.append(("Author", info.author))
+        if info.version:
+            fields.append(("Version", info.version))
+        if info.origin:
+            fields.append(("Origin", info.origin))
+
+        if fields:
+            blocks.append(cls.fields(fields))
+
+        if detail.source:
+            blocks.append(cls.text_section(f"*Source:* `{detail.source}`"))
+
+        if detail.content:
+            preview = detail.content[:1500]
+            if len(detail.content) > 1500:
+                preview += "\n... (truncated)"
+            blocks.extend(cls.code_block(preview, title="System Prompt"))
+
+        return blocks
+
+    @classmethod
+    def skill_result(
+        cls,
+        skill_name: str,
+        prompt: str,
+        result,
+    ) -> list[dict[str, Any]]:
+        """Build skill result message blocks."""
+        blocks: list[dict[str, Any]] = []
+
+        status = ":sparkles: Skill Result" if result.success else ":x: Skill Error"
+        blocks.append(cls.header(status))
+
+        blocks.append(cls.fields([
+            ("Skill", f"`{skill_name}`"),
+            ("Prompt", prompt[:200] if len(prompt) > 200 else prompt),
+        ]))
+        blocks.append(cls.divider())
+
+        text = result.text or result.error or "No output"
+        if len(text) > 2800:
+            text = text[:2800] + "\n... (truncated)"
+        blocks.append(cls.text_section(text))
+
+        if result.duration_ms:
+            blocks.append(cls.context([f"Duration: {result.duration_seconds:.1f}s"]))
 
         return blocks
 

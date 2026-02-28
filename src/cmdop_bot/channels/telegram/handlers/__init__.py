@@ -6,6 +6,7 @@ from cmdop_bot.channels.telegram.handlers.shell import ShellHandler
 from cmdop_bot.channels.telegram.handlers.agent import AgentHandler
 from cmdop_bot.channels.telegram.handlers.files import FilesHandler
 from cmdop_bot.channels.telegram.handlers.machine import MachineHandler
+from cmdop_bot.channels.telegram.handlers.skills import SkillsHandler
 
 __all__ = [
     "BaseHandler",
@@ -15,4 +16,5 @@ __all__ = [
     "AgentHandler",
     "FilesHandler",
     "MachineHandler",
+    "SkillsHandler",
 ]
