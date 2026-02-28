@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
-from typing import TYPE_CHECKING
+from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING, AsyncIterator
 
 from cmdop_bot.utils.errors import friendly_error
 
@@ -14,6 +16,9 @@ if TYPE_CHECKING:
     from cmdop_bot.channels.telegram.formatter import TelegramFormatter
 
 logger = logging.getLogger(__name__)
+
+# Telegram typing indicator lasts ~5s, resend every 4s to keep it alive
+_TYPING_INTERVAL = 4.0
 
 
 class BaseHandler:
@@ -49,8 +54,34 @@ class BaseHandler:
         return user_id in self.allowed_users
 
     async def send_typing(self, chat_id: int) -> None:
-        """Show typing indicator."""
+        """Show typing indicator (single shot, for quick operations)."""
         await self.bot.send_chat_action(chat_id=chat_id, action="typing")
+
+    @asynccontextmanager
+    async def typing(self, chat_id: int) -> AsyncIterator[None]:
+        """Continuous typing indicator — keeps "typing..." visible until the block exits.
+
+        Usage:
+            async with self.typing(msg.chat.id):
+                result = await long_running_operation()
+        """
+        async def _loop() -> None:
+            try:
+                while True:
+                    await self.bot.send_chat_action(chat_id=chat_id, action="typing")
+                    await asyncio.sleep(_TYPING_INTERVAL)
+            except asyncio.CancelledError:
+                pass
+
+        task = asyncio.create_task(_loop())
+        try:
+            yield
+        finally:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
     async def send_error(self, msg: AiogramMessage, error: str | Exception) -> None:
         """Send user-friendly error message."""

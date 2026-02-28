@@ -62,10 +62,9 @@ class SkillsHandler(BaseHandler):
 
     async def _list_skills(self, msg: AiogramMessage) -> None:
         """List available skills."""
-        await self.send_typing(msg.chat.id)
-
         try:
-            skills = await self.cmdop.list_skills()
+            async with self.typing(msg.chat.id):
+                skills = await self.cmdop.list_skills()
 
             if not skills:
                 formatted = self.formatter.escape("No skills found on this machine.")
@@ -94,10 +93,9 @@ class SkillsHandler(BaseHandler):
 
     async def _show_skill(self, msg: AiogramMessage, name: str) -> None:
         """Show skill details."""
-        await self.send_typing(msg.chat.id)
-
         try:
-            detail = await self.cmdop.show_skill(name)
+            async with self.typing(msg.chat.id):
+                detail = await self.cmdop.show_skill(name)
 
             if not detail.found:
                 error = self.formatter.escape(detail.error or f"Skill not found: {name}")
@@ -136,10 +134,9 @@ class SkillsHandler(BaseHandler):
         self, msg: AiogramMessage, name: str, prompt: str
     ) -> None:
         """Run a skill."""
-        await self.send_typing(msg.chat.id)
-
         try:
-            result = await self.cmdop.run_skill(name, prompt)
+            async with self.typing(msg.chat.id):
+                result = await self.cmdop.run_skill(name, prompt)
 
             logger.info(
                 f"Skill result: success={result.success}, "

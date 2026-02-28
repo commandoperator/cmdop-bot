@@ -29,13 +29,12 @@ class ShellHandler(BaseHandler):
             await msg.answer("Usage: `/shell <command>`", parse_mode="MarkdownV2")
             return
 
-        await self.send_typing(msg.chat.id)
-
         try:
-            output, exit_code = await self.cmdop.execute_shell(
-                command.args_text,
-                timeout=self.timeout,
-            )
+            async with self.typing(msg.chat.id):
+                output, exit_code = await self.cmdop.execute_shell(
+                    command.args_text,
+                    timeout=self.timeout,
+                )
 
             # Decode output
             output_text = output.decode("utf-8", errors="replace")

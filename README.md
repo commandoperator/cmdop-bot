@@ -6,7 +6,7 @@
 
 Control your servers via Telegram, Discord, or Slack. Simple, reliable, open-source.
 
-> 📖 **Documentation**: [cmdop.com/docs/sdk/python/bot](https://cmdop.com/docs/sdk/python/bot)
+> 📖 **Documentation**: [cmdop.com/docs/sdk/python-bot](https://cmdop.com/docs/sdk/python-bot)
 >
 > 📖 **Read the article**: [PicoClaw and OpenClaw Are Not Infrastructure: The $10 AI Agent Myth](https://medium.com/@reformsai/picoclaw-and-openclaw-are-not-infrastructure-the-10-ai-agent-myth-43d43e0726e3)
 

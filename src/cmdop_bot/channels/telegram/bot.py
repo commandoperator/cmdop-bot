@@ -248,10 +248,9 @@ class TelegramBot(BaseChannel):
 
     async def _handle_chat_message(self, msg: AiogramMessage, text: str) -> None:
         """Handle chat message - send to AI agent."""
-        await self._bot.send_chat_action(chat_id=msg.chat.id, action="typing")
-
         try:
-            result = await self._cmdop.run_agent(text)
+            async with self._agent_handler.typing(msg.chat.id):
+                result = await self._cmdop.run_agent(text)
 
             if result.success:
                 response_text = result.text or "Done."

@@ -30,10 +30,9 @@ class AgentHandler(BaseHandler):
             await msg.answer("Usage: `/agent <task description>`", parse_mode="MarkdownV2")
             return
 
-        await self.send_typing(msg.chat.id)
-
         try:
-            result = await self.cmdop.run_agent(command.args_text)
+            async with self.typing(msg.chat.id):
+                result = await self.cmdop.run_agent(command.args_text)
 
             logger.info(f"Agent result: success={result.success}, text_len={len(result.text or '')}, error={result.error}")
             logger.debug(f"Agent result text: {result.text[:500] if result.text else '(empty)'}")

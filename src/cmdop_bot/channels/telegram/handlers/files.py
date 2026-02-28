@@ -36,21 +36,20 @@ class FilesHandler(BaseHandler):
             )
             return
 
-        await self.send_typing(msg.chat.id)
-
         try:
             subcommand = command.args[0].lower()
             path = command.args[1] if len(command.args) > 1 else "."
 
-            if subcommand in ("ls", "list"):
-                await self._list_files(msg, path)
-            elif subcommand in ("cat", "read"):
-                await self._read_file(msg, path)
-            elif subcommand == "info":
-                await self._file_info(msg, path)
-            else:
-                escaped = self.formatter.escape(subcommand)
-                await msg.answer(f"Unknown subcommand: `{escaped}`", parse_mode="MarkdownV2")
+            async with self.typing(msg.chat.id):
+                if subcommand in ("ls", "list"):
+                    await self._list_files(msg, path)
+                elif subcommand in ("cat", "read"):
+                    await self._read_file(msg, path)
+                elif subcommand == "info":
+                    await self._file_info(msg, path)
+                else:
+                    escaped = self.formatter.escape(subcommand)
+                    await msg.answer(f"Unknown subcommand: `{escaped}`", parse_mode="MarkdownV2")
 
         except Exception as e:
             logger.exception("File operation failed")
@@ -65,10 +64,9 @@ class FilesHandler(BaseHandler):
         command = Command.parse_text(msg.text or "")
         path = command.args_text.strip() if command and command.args_text else "."
 
-        await self.send_typing(msg.chat.id)
-
         try:
-            await self._list_files(msg, path)
+            async with self.typing(msg.chat.id):
+                await self._list_files(msg, path)
         except Exception as e:
             logger.exception("List directory failed")
             await self.send_error(msg, e)
@@ -86,10 +84,10 @@ class FilesHandler(BaseHandler):
             return
 
         path = command.args_text.strip()
-        await self.send_typing(msg.chat.id)
 
         try:
-            await self._read_file(msg, path)
+            async with self.typing(msg.chat.id):
+                await self._read_file(msg, path)
         except Exception as e:
             logger.exception("Read file failed")
             await self.send_error(msg, e)
