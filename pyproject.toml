@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cmdop-bot"
-version = "2026.3.3"
+version = "2026.3.3.1"
 description = "CMDOP Bot - Multi-channel bot integrations for remote machine access"
 readme = "README.md"
 license = "MIT"
@@ -38,6 +38,7 @@ classifiers = [
 dependencies = [
     "pydantic>=2.10.0",
     "httpx>=0.28.0",
+    "tenacity>=9.0.0",
     "cmdop",  # CMDOP Python SDK
     "rich>=13.0.0",  # For demo bot CLI formatting
 ]
