@@ -1,6 +1,6 @@
 # CMDOP Bots
 
-![CMDOP Architecture](https://cmdop.com/images/architecture/vs-personal-agent.png)
+![CMDOP Bot](https://raw.githubusercontent.com/markolofsen/assets/main/libs/cmdop_bot.webp)
 
 **Multi-channel bot integrations for remote machine access.**
 
