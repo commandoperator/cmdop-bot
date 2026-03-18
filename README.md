@@ -1,6 +1,6 @@
 # CMDOP Bots
 
-![CMDOP Bot](https://raw.githubusercontent.com/markolofsen/assets/main/libs/cmdop_bot.webp)
+![CMDOP Bot](https://raw.githubusercontent.com/markolofsen/assets/main/libs/cmdop/cmdop-bot.webp)
 
 **Multi-channel bot integrations for remote machine access.**
 
